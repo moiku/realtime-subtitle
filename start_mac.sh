@@ -1,16 +1,11 @@
 #!/bin/bash
-
-# Ensure we are in the script's directory
+# Launch the dashboard with hot reload. Dependencies are managed by uv.
 cd "$(dirname "$0")"
 
-if [ ! -d ".venv" ]; then
-    echo "[ERROR] Virtual environment not found."
-    echo "Please run './install_mac.sh' first."
+if ! command -v uv &> /dev/null; then
+    echo "[ERROR] uv not found. Install: brew install uv"
     exit 1
 fi
 
-echo "[Launcher] Activating environment..."
-source .venv/bin/activate
-
 echo "[Launcher] Starting App (Hot Reload Mode)..."
-python reloader.py
+exec uv run python reloader.py

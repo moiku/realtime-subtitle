@@ -33,7 +33,6 @@ class Transcriber:
         print(f"[Transcriber] Using faster-whisper (CPU/CUDA) with model: {model_size}")
     
     def _init_mlx(self, model_size):
-        sssss
         try:
             import mlx_whisper
             # MLX doesn't need explicit model loading here
@@ -528,6 +527,15 @@ class Transcriber:
                 print(f"[Transcriber] FunASR Error: {e}")
             return ""
 
+    @staticmethod
+    def _mlx_repo(model_size):
+        """Map a model size to its mlx-community HF repo (repo naming is not uniform)"""
+        if "/" in model_size:
+            return model_size
+        if model_size in ("large-v3-turbo", "turbo"):
+            return "mlx-community/whisper-large-v3-turbo"
+        return f"mlx-community/whisper-{model_size}-mlx"
+
     def _transcribe_mlx(self, audio_data, prompt=None):
         import mlx_whisper
         # mlx_whisper.transcribe takes audio and other kwargs
@@ -536,7 +544,7 @@ class Transcriber:
         try:
             # Prepare kwargs
             kwargs = {
-                "path_or_hf_repo": f"mlx-community/whisper-{self.model_size}-mlx",
+                "path_or_hf_repo": self._mlx_repo(self.model_size),
                 "language": self.language,
                 "temperature": 0.0
             }

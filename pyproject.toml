@@ -1,0 +1,24 @@
+[project]
+name = "realtime-subtitle"
+version = "0.1.0"
+description = "Real-time transparent subtitle overlay (fork of Vanyoo/realtime-subtitle, JA->EN lecture setup)"
+requires-python = ">=3.12"
+dependencies = [
+    "PyQt6",
+    "sounddevice",
+    "numpy",
+    "openai",
+    "python-dotenv",
+    "watchdog",
+    "pyobjc-framework-CoreAudio; sys_platform == 'darwin'",
+    "mlx-whisper; sys_platform == 'darwin' and platform_machine == 'arm64'",
+]
+
+[project.optional-dependencies]
+# Non-Apple-Silicon fallback backend
+faster-whisper = ["faster-whisper"]
+# Chinese-oriented ASR backend from upstream (pulls in torch)
+funasr = ["funasr", "modelscope"]
+
+[tool.uv]
+package = false

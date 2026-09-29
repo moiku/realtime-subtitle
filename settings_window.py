@@ -17,8 +17,10 @@ class SettingsWindow(QWidget):
         form_layout = QFormLayout()
         
         # API Key
+        # Key comes from ~/.secrets/api_keys.env; this field is only used for model fetching
         self.api_key_input = QLineEdit()
         self.api_key_input.setText(config.api_key if config.api_key != "dummy-key-for-local" else "")
+        self.api_key_input.setReadOnly(True)
         self.api_key_input.setPlaceholderText("sk-...")
         self.api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
         form_layout.addRow("OpenAI API Key:", self.api_key_input)
@@ -201,7 +203,6 @@ class SettingsWindow(QWidget):
         if not parser.has_section("transcription"): parser.add_section("transcription")
         if not parser.has_section("audio"): parser.add_section("audio")
         
-        parser.set("api", "api_key", self.api_key_input.text() or "")
         parser.set("api", "base_url", self.base_url_input.text() or "")
         parser.set("translation", "model", self.model_input.currentText())
         parser.set("translation", "threads", str(self.threads_input.value()))

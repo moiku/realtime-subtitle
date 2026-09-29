@@ -1,10 +1,11 @@
+; API keys are NOT stored here. OPENAI_API_KEY (and optional OPENAI_BASE_URL)
+; are loaded from ~/.secrets/api_keys.env.
 [api]
-base_url = http://localhost:11434/v1/
-api_key = sk-talkai-bd76c0f60c6f4e50bcfa39fc1dce0efd
+base_url =
 
 [translation]
-model = qwen2.5:7b
-target_lang = Chinese
+model = gpt-4.1-mini
+target_lang = English
 threads = 4
 
 [display]
@@ -13,15 +14,16 @@ window_width = 800
 window_height = 120
 
 [transcription]
-backend = whisper
-whisper_model = base
+backend = mlx
+whisper_model = large-v3-turbo
 funasr_model = iic/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch
 device = auto
 compute_type = float16
-source_language = auto
-transcription_workers = 4
+source_language = ja
+transcription_workers = 1
 
 [audio]
+; auto = system default input (microphone), blackhole = auto-detect BlackHole, or a device index
 device_index = auto
 sample_rate = 16000
 silence_threshold = 0.005
@@ -33,4 +35,3 @@ streaming_interval = 3
 streaming_step_size = 0.2
 update_interval = 0.8
 streaming_overlap = 0.3
-

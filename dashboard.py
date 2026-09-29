@@ -493,18 +493,15 @@ class Dashboard(QWidget):
         """Fetch available models from the API and populate the model dropdown"""
         try:
             from openai import OpenAI
-            import httpx
             
-            api_key = self.api_key.text() or "dummy-key-for-local"
+            api_key = config.api_key
             base_url = self.base_url.text() or None
             
             # Update button state
             self.refresh_models_btn.setEnabled(False)
             self.refresh_models_btn.setText("...")
             
-            # Create client with SSL verification disabled
-            http_client = httpx.Client(verify=False)
-            client = OpenAI(api_key=api_key, base_url=base_url, http_client=http_client)
+            client = OpenAI(api_key=api_key, base_url=base_url)
             
             # Fetch models
             models_response = client.models.list()
@@ -565,7 +562,7 @@ class Dashboard(QWidget):
         
         # Whisper Model
         self.whisper_model = QComboBox()
-        self.whisper_model.addItems(["tiny", "tiny.en", "base", "base.en", "small", "small.en", "medium", "medium.en", "large-v3", "turbo"])
+        self.whisper_model.addItems(["tiny", "tiny.en", "base", "base.en", "small", "small.en", "medium", "medium.en", "large-v3", "large-v3-turbo"])
         self.whisper_model.setCurrentText(config.whisper_model)
         layout.addRow("Whisper Model:", self.whisper_model)
         
@@ -683,10 +680,9 @@ class Dashboard(QWidget):
         tab = QWidget()
         layout = QFormLayout()
         
-        self.api_key = QLineEdit(config.api_key)
-        self.api_key.setEchoMode(QLineEdit.EchoMode.Password)
-        self.api_key.setPlaceholderText("sk-...")
-        layout.addRow("API Key:", self.api_key)
+        # Key is loaded from ~/.secrets/api_keys.env; never edited or saved here
+        key_status = "loaded from ~/.secrets/api_keys.env" if config.api_key != "dummy-key-for-local" else "NOT SET (add OPENAI_API_KEY to ~/.secrets/api_keys.env)"
+        layout.addRow("API Key:", QLabel(key_status))
         
         self.base_url = QLineEdit(config.api_base_url or "")
         self.base_url.setPlaceholderText("https://api.openai.com/v1")
@@ -767,7 +763,6 @@ class Dashboard(QWidget):
         cp.set("transcription", "source_language", self.source_language.currentText())
         
         # Translation
-        cp.set("api", "api_key", self.api_key.text())
         cp.set("api", "base_url", self.base_url.text())
         cp.set("translation", "model", self.model.currentText())
         cp.set("translation", "target_lang", self.target_lang.currentText())

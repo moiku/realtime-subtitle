@@ -1,5 +1,11 @@
 import configparser
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# API keys live in ~/.secrets/api_keys.env and are never written to config.ini
+load_dotenv(dotenv_path=Path.home() / ".secrets" / "api_keys.env")
 
 class Config:
     """Centralized configuration loaded from config.ini"""
@@ -19,21 +25,20 @@ class Config:
         
         # API settings (env vars take precedence)
         self.api_base_url = os.getenv("OPENAI_BASE_URL") or self._get("api", "base_url") or None
-        self.api_key = os.getenv("OPENAI_API_KEY") or self._get("api", "api_key", "dummy-key-for-local")
+        self.api_key = os.getenv("OPENAI_API_KEY") or "dummy-key-for-local"
         
         # Translation settings
-        self.model = self._get("translation", "model", "gpt-3.5-turbo")
-        self.model = self._get("translation", "model", "gpt-3.5-turbo")
-        self.target_lang = self._get("translation", "target_lang", "Chinese")
+        self.model = self._get("translation", "model", "gpt-4.1-mini")
+        self.target_lang = self._get("translation", "target_lang", "English")
         self.translation_threads = self._getint("translation", "threads", 4)
         
         # Transcription settings
-        self.asr_backend = self._get("transcription", "backend", "whisper").lower()
-        self.whisper_model = self._get("transcription", "whisper_model", "base")
+        self.asr_backend = self._get("transcription", "backend", "mlx").lower()
+        self.whisper_model = self._get("transcription", "whisper_model", "large-v3-turbo")
         self.funasr_model = self._get("transcription", "funasr_model", "iic/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
         self.whisper_device = self._get("transcription", "device", "cpu")
         self.whisper_compute_type = self._get("transcription", "compute_type", "int8")
-        self.source_language = self._get("transcription", "source_language", "auto")
+        self.source_language = self._get("transcription", "source_language", "ja")
         if self.source_language == "auto":
             self.source_language = None  # Whisper uses None for auto-detect
         self.transcription_workers = self._getint("transcription", "transcription_workers", 2)
@@ -44,11 +49,12 @@ class Config:
         self.silence_duration = self._getfloat("audio", "silence_duration", 1.0)
         self.chunk_duration = self._getfloat("audio", "chunk_duration", 0.5)
         
-        # Device index: 'auto' or empty = auto-detect BlackHole, or set a specific index
+        # Device index: 'auto' or empty = system default input (microphone),
+        # 'blackhole' = auto-detect BlackHole, or set a specific index
         device_idx_str = self._get("audio", "device_index", "auto")
         if device_idx_str.isdigit():
             self.device_index = int(device_idx_str)
-        elif device_idx_str.lower() in ("auto", ""):
+        elif device_idx_str.lower() == "blackhole":
             self.device_index = self._find_blackhole_device()
         else:
             self.device_index = None
@@ -106,7 +112,7 @@ class Config:
         """Print current configuration for debugging"""
         print("[Config] Current settings:")
         print(f"  API Base URL: {self.api_base_url or '(default OpenAI)'}")
-        print(f"  API Key: {self.api_key[:8]}...{self.api_key[-4:] if len(self.api_key) > 12 else '***'}")
+        print(f"  API Key: {'set' if os.getenv('OPENAI_API_KEY') else 'NOT SET (~/.secrets/api_keys.env)'}")
         print(f"  Model: {self.model}")
         print(f"  Target Language: {self.target_lang}")
         print(f"  ASR Backend: {self.asr_backend}")

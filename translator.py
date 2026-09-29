@@ -1,10 +1,9 @@
 from openai import OpenAI, OpenAIError
-import httpx
 import os
 import re
 
 class Translator:
-    def __init__(self, api_key=None, base_url=None, model="MBZUAI-IFM/K2-Think-nothink", target_lang="Chinese"):
+    def __init__(self, api_key=None, base_url=None, model="gpt-4.1-mini", target_lang="English"):
         """
         Translates text using an LLM.
         
@@ -27,16 +26,14 @@ class Translator:
 
         self.base_url = base_url
         
-        # Create HTTP client with SSL verification disabled (for self-signed certs)
-        http_client = httpx.Client(verify=False)
-        self.client = OpenAI(api_key=api_key, base_url=base_url, http_client=http_client)
+        self.client = OpenAI(api_key=api_key, base_url=base_url)
         
         # Logging
         print(f"[Translator] Initialized:")
         print(f"  - Base URL: {base_url or 'https://api.openai.com/v1 (default)'}")
         print(f"  - Model: {model}")
         print(f"  - Target Language: {target_lang}")
-        print(f"  - API Key: {api_key[:8]}...{api_key[-4:] if len(api_key) > 12 else '***'}")
+        print(f"  - API Key: {'set' if api_key != 'dummy-key-for-local' else 'not set'}")
         
         # Context carryover for sentence continuity
         self.previous_text = ""
