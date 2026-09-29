@@ -1,0 +1,46 @@
+# Speech-specific supplement to the course glossary (lec-ml/2026/GLOSSARY-en.md).
+# terms: words that appear in spoken asides but not on slides.
+# asr_hints: Japanese words passed to Whisper's initial_prompt to bias recognition.
+#   Keep this list short (Whisper only uses ~224 prompt tokens, shared with the previous sentence).
+
+terms:
+  - {ja: 技大生, en: Nagaoka Tech students, note: students of Nagaoka University of Technology}
+  - {ja: 技大, en: Nagaoka Tech}
+  - {ja: 高専生, en: KOSEN students, note: national college of technology students, not high school students}
+  - {ja: 情報経営, en: Information and Management Systems Engineering}
+  - {ja: ライブキャンパス, en: LiveCampus, note: the university LMS}
+  - {ja: 出席にする, en: count as attendance}
+  - {ja: 確認テスト, en: check quiz}
+  - {ja: 復習問題, en: review questions}
+  - {ja: オンデマンド, en: on-demand}
+  - {ja: 非負性, en: non-negativity}
+  - {ja: 等号成立条件, en: condition for equality}
+  - {ja: 超幾何分布, en: hypergeometric distribution}
+  - {ja: 幾何分布, en: geometric distribution}
+  - {ja: 負の二項分布, en: negative binomial distribution}
+  - {ja: 実現値, en: realized value}
+  - {ja: 周辺化, en: marginalization}
+  - {ja: iid, en: i.i.d.}
+  - {ja: ラージX / 大文字のX, en: capital X}
+  - {ja: スモールx / 小文字のx, en: lowercase x}
+  - {ja: カグル, en: Kaggle}
+  - {ja: アキネーター, en: Akinator}
+
+asr_hints:
+  - 機械学習
+  - 確率変数
+  - 実現値
+  - 決定木
+  - 非負性
+  - 等号成立
+  - 周辺分布
+  - 同時分布
+  - 復元抽出
+  - 母集団
+  - 母数
+  - 全変動距離
+  - 確率関数
+  - 技大生
+  - 高専生
+  - Kaggle
+  - Claude

@@ -12,6 +12,7 @@ dependencies = [
     "watchdog",
     "pyobjc-framework-CoreAudio; sys_platform == 'darwin'",
     "mlx-whisper; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "pyyaml>=6.0.3",
 ]
 
 [project.optional-dependencies]

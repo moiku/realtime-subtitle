@@ -69,11 +69,26 @@ class Config:
         self.update_interval = self._getfloat("audio", "update_interval", 0.5)
         self.streaming_overlap = self._getfloat("audio", "streaming_overlap", 0.3)
         
+        # Glossary: comma-separated .md/.yaml paths (relative paths are relative to this directory)
+        base = os.path.dirname(os.path.abspath(__file__))
+        self.glossary_files = [self._resolve(base, f) for f in self._get("glossary", "files", "").split(",") if f.strip()]
+        self.domain = self._get("glossary", "domain", "")
+        self.context_size = self._getint("translation", "context_size", 3)
+
+        # Session logging (audio.wav + segments.jsonl per session)
+        self.log_dir = self._resolve(base, self._get("logging", "dir", "transcripts"))
+        self.save_audio = self._get("logging", "save_audio", "true").lower() == "true"
+
         # Display settings
         self.display_duration = self._getfloat("display", "display_duration", 3.0)
         self.window_width = self._getint("display", "window_width", 800)
         self.window_height = self._getint("display", "window_height", 120)
     
+    @staticmethod
+    def _resolve(base, path):
+        path = os.path.expanduser(path.strip())
+        return path if os.path.isabs(path) else os.path.join(base, path)
+
     def _get(self, section, key, fallback=""):
         try:
             value = self.config.get(section, key)
@@ -119,6 +134,8 @@ class Config:
         print(f"  Whisper Model: {self.whisper_model}")
         print(f"  FunASR Model: {self.funasr_model}")
         print(f"  Sample Rate: {self.sample_rate}")
+        print(f"  Glossary: {', '.join(self.glossary_files) or '(none)'}")
+        print(f"  Log Dir: {self.log_dir} (audio: {self.save_audio})")
 
 # Global config instance
 config = Config()

@@ -1757,6 +1757,7 @@ dependencies = [
     { name = "pyobjc-framework-coreaudio", marker = "sys_platform == 'darwin'" },
     { name = "pyqt6" },
     { name = "python-dotenv" },
+    { name = "pyyaml" },
     { name = "sounddevice" },
     { name = "watchdog" },
 ]
@@ -1781,6 +1782,7 @@ requires-dist = [
     { name = "pyobjc-framework-coreaudio", marker = "sys_platform == 'darwin'" },
     { name = "pyqt6" },
     { name = "python-dotenv" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "sounddevice" },
     { name = "watchdog" },
 ]

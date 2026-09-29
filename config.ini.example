@@ -8,6 +8,18 @@ model = gpt-4.1-mini
 target_lang = English
 threads = 4
 
+context_size = 3
+
+[glossary]
+; comma-separated .md (table rows: | 日本語 | English |) or .yaml files
+files = ~/Projects/lec-ml/2026/GLOSSARY-en.md, glossaries/lecture-extra.yaml
+domain = machine learning
+
+[logging]
+; each session writes <dir>/<timestamp>/{audio.wav, segments.jsonl, meta.json}
+dir = transcripts
+save_audio = true
+
 [display]
 display_duration = 10
 window_width = 800
