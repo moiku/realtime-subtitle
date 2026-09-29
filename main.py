@@ -174,35 +174,22 @@ class Pipeline(QObject):
                 now = time.time()
                 buffer_duration = len(buffer) / self.audio.sample_rate
                 
-                # Check silence for finalization
-                # Use configured silence duration/threshold
-                is_silence = False
-                min_silence_dur = config.silence_duration # e.g. 1.0s
+                # Segmentation. The lecturer often pauses inside a phrase (even inside a word:
+                # 確率…関数), so short buffers are only cut on a long pause and are otherwise
+                # merged with what follows; ASR on the merged audio recovers the split word.
+                def tail_silent(sec):
+                    n = int(self.audio.sample_rate * sec)
+                    return len(buffer) > n and np.sqrt(np.mean(buffer[-n:]**2)) < self.audio.silence_threshold
                 
-                # Only check silence if we have enough buffer
-                if buffer_duration > min_silence_dur:
-                     # Check tail of silence duration
-                    tail = buffer[-int(self.audio.sample_rate * min_silence_dur):]
-                    rms = np.sqrt(np.mean(tail**2))
-                    if rms < self.audio.silence_threshold:
-                        is_silence = True
-                        
-                # Dynamic VAD Logic
-                # 1. Standard: > 2.0s duration AND > 1.0s silence (Configured)
-                standard_cut = (is_silence and buffer_duration > 2.0)
-                
-                # 2. Soft Limit: > 6.0s duration AND > 0.4s silence (Catch brief pauses to avoid huge latency)
-                soft_limit_cut = False
-                if buffer_duration > 6.0:
-                    # Check shorter silence tail (0.4s)
-                    short_tail_samps = int(self.audio.sample_rate * 0.4)
-                    if len(buffer) > short_tail_samps:
-                        t_rms = np.sqrt(np.mean(buffer[-short_tail_samps:]**2))
-                        if t_rms < self.audio.silence_threshold:
-                            soft_limit_cut = True
-                            
-                # 3. Hard Limit: > max_phrase_duration (Force cut)
+                # 1. Short buffer: cut only on a long pause
+                long_pause_cut = buffer_duration > 1.0 and tail_silent(config.long_silence_duration)
+                # 2. Standard: long enough AND a normal pause
+                standard_cut = buffer_duration > config.segment_min_duration and tail_silent(config.silence_duration)
+                # 3. Soft limit: take any brief pause to avoid huge latency
+                soft_limit_cut = buffer_duration > config.segment_soft_limit and tail_silent(0.3)
+                # 4. Hard limit: force cut
                 hard_limit_cut = (buffer_duration > self.audio.max_phrase_duration)
+                standard_cut = standard_cut or long_pause_cut
 
                 should_finalize = standard_cut or soft_limit_cut or hard_limit_cut
                 

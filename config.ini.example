@@ -41,7 +41,11 @@ sample_rate = 16000
 silence_threshold = 0.005
 silence_duration = 0.5
 chunk_duration = 0.1
-max_phrase_duration = 30
+max_phrase_duration = 20
+; short buffers (< segment_min_duration s) are cut only on a pause of long_silence_duration s
+segment_min_duration = 4.0
+long_silence_duration = 1.2
+segment_soft_limit = 8.0
 streaming_mode = true
 streaming_interval = 3
 streaming_step_size = 0.2

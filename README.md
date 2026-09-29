@@ -1,3 +1,37 @@
+# realtime-subtitle (moiku fork: JA → EN lecture subtitles)
+
+Fork of [Vanyoo/realtime-subtitle](https://github.com/Vanyoo/realtime-subtitle) tuned for live English subtitles of Japanese university lectures. Changes from upstream:
+
+- **Glossary-driven translation**: course glossaries (Markdown tables `| 日本語 | English |` or YAML) are injected into the translation prompt; a short hint list biases Whisper via `initial_prompt`.
+- **Lecture-aware prompt**: drops fillers, keeps self-corrections, reads `X分のY` as Y/X, keeps negations; last 3 segments as context; translation serialized so context stays in order.
+- **Segmentation for lecture speech**: short buffers are merged unless there is a long pause, so a word split by a pause (確率…関数) is recognized as one.
+- **Hallucination filters** for Japanese (repetition loops, 「ご視聴ありがとうございました」, low-confidence segments).
+- **Session logs**: `transcripts/<timestamp>/{audio.wav, segments.jsonl, meta.json}`.
+- `simulate.py` runs the pipeline on a recording; `reprocess.py` re-transcribes (large-v3) and re-translates a session into `refined.jsonl` + `.srt`.
+- uv-managed; `OPENAI_API_KEY` is read from `~/.secrets/api_keys.env` and never written to `config.ini`.
+
+## Quick start (macOS, Apple Silicon)
+
+```bash
+brew install uv
+./install_mac.sh          # uv sync + creates config.ini
+./start_mac.sh            # dashboard -> Launch Translator
+```
+
+Microphone input is the default. Edit `config.ini` → `[glossary] files` to point to your course glossary.
+
+```bash
+# Try the pipeline on a recording (16 kHz mono WAV)
+ffmpeg -i lecture.mp4 -vn -ac 1 -ar 16000 lecture.wav
+uv run python simulate.py lecture.wav --start 1500 --duration 120
+# After class: reference transcript/translation + SRT
+uv run python reprocess.py transcripts/<timestamp>
+```
+
+---
+
+*Upstream README follows.*
+
 # Real-Time Translator 🎙️➡️🇨🇳
 
 A high-performance real-time speech-to-text and translation application built for macOS (Apple Silicon optimized).

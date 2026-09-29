@@ -1,4 +1,13 @@
+import re
+
 import numpy as np
+
+# Phrases Whisper emits on silence/noise (learned from subtitle credits in its training data)
+KNOWN_HALLUCINATIONS = {
+    "ご視聴ありがとうございました", "ご視聴ありがとうございます", "チャンネル登録よろしくお願いします",
+    "最後までご視聴いただきありがとうございました", "おやすみなさい",
+}
+_REPEAT_RUN = re.compile(r"(.{1,12}?)(?:[、。,.\s]*\1){3,}")
 
 class Transcriber:
     def __init__(self, backend="whisper", model_size="base", device="cpu", compute_type="int8", language=None):
@@ -355,6 +364,9 @@ class Transcriber:
         else:  # whisper
             text = self._transcribe_faster_whisper(audio_data, prompt)
             
+        # Collapse Japanese repetition loops (テレビ、テレビ、テレビ…) and drop known phantom phrases
+        text = self._clean_japanese_loops(text)
+
         # Filter hallucinations (infinite loops, e.g. "once once once")
         if self._is_hallucination(text):
             print(f"[Transcriber] Filtered hallucination: {text[:50]}...")
@@ -414,6 +426,21 @@ class Transcriber:
                 return True
                 
         return False
+
+    @staticmethod
+    def _clean_japanese_loops(text):
+        if not text:
+            return text
+        # A phrase repeated 4+ times: keep one occurrence and drop everything after the loop starts
+        m = _REPEAT_RUN.search(text)
+        if m:
+            print(f"[Transcriber] Collapsed repetition loop: {text[:40]}...")
+            text = text[:m.start()] + m.group(1)
+        core = re.sub(r"[、。,.!！?？\s]", "", text)
+        if core in KNOWN_HALLUCINATIONS or len(core) == 0:
+            print(f"[Transcriber] Filtered phantom phrase: {text[:40]}")
+            return ""
+        return text
 
     def _is_prompt_echo(self, text, prompt):
         """Check if the transcribed text is just an echo of the prompt (common hallucination on silence/music)"""
@@ -552,7 +579,7 @@ class Transcriber:
                 kwargs["initial_prompt"] = prompt
                 
             result = mlx_whisper.transcribe(audio_data, **kwargs)
-            return result.get("text", "").strip()
+            return self._confident_text(result)
         except Exception as e:
             error_msg = str(e)
             # Handle unsupported language error gracefully
@@ -570,6 +597,18 @@ class Transcriber:
             else:
                 print(f"[Transcriber] MLX Error: {e}")
                 return ""
+
+    @staticmethod
+    def _confident_text(result):
+        """Join segments, skipping those Whisper itself flags as non-speech or degenerate"""
+        kept = []
+        for seg in result.get("segments", []):
+            if seg.get("compression_ratio", 0) > 2.4:
+                continue  # repetitive output
+            if seg.get("no_speech_prob", 0) > 0.6 and seg.get("avg_logprob", 0) < -1.0:
+                continue  # probably silence or noise
+            kept.append(seg.get("text", "").strip())
+        return "".join(kept).strip() if result.get("segments") else result.get("text", "").strip()
 
     def _transcribe_faster_whisper(self, audio_data, prompt=None):
         segments, _ = self.model.transcribe(

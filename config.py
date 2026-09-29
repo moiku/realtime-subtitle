@@ -59,6 +59,12 @@ class Config:
         else:
             self.device_index = None
             
+        # Segmentation: buffers shorter than segment_min_duration are only cut on a pause of
+        # long_silence_duration; after segment_soft_limit any brief pause cuts
+        self.segment_min_duration = self._getfloat("audio", "segment_min_duration", 4.0)
+        self.long_silence_duration = self._getfloat("audio", "long_silence_duration", 1.2)
+        self.segment_soft_limit = self._getfloat("audio", "segment_soft_limit", 8.0)
+
         # Max phrase duration - force processing after N seconds
         self.max_phrase_duration = self._getfloat("audio", "max_phrase_duration", 5.0)
         
