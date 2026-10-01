@@ -708,6 +708,12 @@ class Dashboard(QWidget):
         self.target_lang.setEditable(True)
         self.target_lang.setCurrentText(config.target_lang)
         layout.addRow("Target Language:", self.target_lang)
+
+        # Today's slides: glossary terms found in them become ASR hints
+        self.slides = QLineEdit(", ".join(config.slide_files))
+        self.slides.setPlaceholderText("~/Projects/lec-ml/2026/004_polynomial_regression.md")
+        self.slides.setToolTip("Today's slide .md files (comma-separated). Save and restart to apply.")
+        layout.addRow("Slides (.md):", self.slides)
         
         tab.setLayout(layout)
         self.tabs.addTab(tab, "🈵 Translation")
@@ -766,6 +772,8 @@ class Dashboard(QWidget):
         cp.set("api", "base_url", self.base_url.text())
         cp.set("translation", "model", self.model.currentText())
         cp.set("translation", "target_lang", self.target_lang.currentText())
+        if not cp.has_section("glossary"): cp.add_section("glossary")
+        cp.set("glossary", "slides", self.slides.text())
         
         with open(config_path, 'w') as f:
             cp.write(f)

@@ -99,6 +99,7 @@ def main():
     os.makedirs(out, exist_ok=True)
 
     glossary = load_glossary(config.glossary_files)
+    glossary.add_slide_hints(config.slide_files)
     segs = transcribe(wav, args.asr_model, config.source_language, glossary.asr_prompt())
     segs = translate(segs, args.mt_model, glossary, config.domain)
 

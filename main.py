@@ -64,6 +64,7 @@ class Pipeline(QObject):
         
         # Glossary: terms go to the translator, a short hint list biases ASR via initial_prompt
         self.glossary = load_glossary(config.glossary_files)
+        self.glossary.add_slide_hints(config.slide_files)
         self.asr_hints = self.glossary.asr_prompt()
         
         # Initialize Translator

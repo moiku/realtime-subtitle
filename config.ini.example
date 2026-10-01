@@ -14,6 +14,8 @@ context_size = 3
 ; comma-separated .md (table rows: | 日本語 | English |) or .yaml files
 files = ~/Projects/lec-ml/2026/GLOSSARY-en.md, glossaries/lecture-extra.yaml
 domain = machine learning
+; today's slides (.md, comma-separated). Glossary terms that appear in them are passed to Whisper as hints
+slides = ~/Projects/lec-ml/2026/004_polynomial_regression.md
 
 [logging]
 ; each session writes <dir>/<timestamp>/{audio.wav, segments.jsonl, meta.json}

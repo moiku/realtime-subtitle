@@ -1,6 +1,6 @@
 # Speech-specific supplement to the course glossary (lec-ml/2026/GLOSSARY-en.md).
 # terms: words that appear in spoken asides but not on slides.
-# asr_hints: Japanese words passed to Whisper's initial_prompt to bias recognition.
+# asr_hints: Japanese words always passed to Whisper's initial_prompt to bias recognition.
 #   Keep this list short (Whisper only uses ~224 prompt tokens, shared with the previous sentence).
 
 terms:
@@ -21,26 +21,20 @@ terms:
   - {ja: 実現値, en: realized value}
   - {ja: 周辺化, en: marginalization}
   - {ja: iid, en: i.i.d.}
+  - {ja: 尤度, en: likelihood, note: "ASR often mishears it as 誘導 (same reading); 誘導 in a statistics context means 尤度"}
+  - {ja: 不偏性, en: unbiasedness, note: "ASR may write it as 普遍性"}
   - {ja: ラージX / 大文字のX, en: capital X}
   - {ja: スモールx / 小文字のx, en: lowercase x}
   - {ja: カグル, en: Kaggle}
   - {ja: アキネーター, en: Akinator}
 
 asr_hints:
+  # Always-on hints. Lecture-specific terms come from [glossary] slides in config.ini.
   - 機械学習
-  - 確率変数
-  - 実現値
-  - 決定木
-  - 非負性
-  - 等号成立
-  - 周辺分布
-  - 同時分布
-  - 復元抽出
-  - 母集団
-  - 母数
-  - 全変動距離
-  - 確率関数
   - 技大生
   - 高専生
   - Kaggle
   - Claude
+
+# Everyday words Whisper already recognizes; never spend hint budget on them
+asr_hint_exclude: [入力, 出力, 目的, 設定, 温度, 領域, クラス, 境界, 当てはまり, 次数, 外枠, 語彙, 内積, 初期点, 重み付け平均]

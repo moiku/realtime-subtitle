@@ -79,6 +79,8 @@ class Config:
         base = os.path.dirname(os.path.abspath(__file__))
         self.glossary_files = [self._resolve(base, f) for f in self._get("glossary", "files", "").split(",") if f.strip()]
         self.domain = self._get("glossary", "domain", "")
+        # Today's slides (.md, comma-separated): glossary terms found there become ASR hints
+        self.slide_files = [self._resolve(base, f) for f in self._get("glossary", "slides", "").split(",") if f.strip()]
         self.context_size = self._getint("translation", "context_size", 3)
 
         # Session logging (audio.wav + segments.jsonl per session)
@@ -141,6 +143,7 @@ class Config:
         print(f"  FunASR Model: {self.funasr_model}")
         print(f"  Sample Rate: {self.sample_rate}")
         print(f"  Glossary: {', '.join(self.glossary_files) or '(none)'}")
+        print(f"  Slides: {', '.join(self.slide_files) or '(none)'}")
         print(f"  Log Dir: {self.log_dir} (audio: {self.save_audio})")
 
 # Global config instance
