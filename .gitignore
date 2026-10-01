@@ -3,3 +3,4 @@ transcripts
 .DS_Store
 config.ini
 .venv
+display_prefs.json
