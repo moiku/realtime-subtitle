@@ -161,6 +161,11 @@ class Pipeline(QObject):
         
         # Context Management
         self.last_final_text = ""
+        # Number of transcription tasks queued or running. Partial (live Japanese) updates are
+        # only submitted when this is 0: on a slow machine they would otherwise pile up in the
+        # single ASR queue ahead of final segments and the subtitles would fall further behind.
+        self._asr_pending = 0
+        self._asr_lock = threading.Lock()
 
         try:
             for audio_chunk in audio_gen:
@@ -201,7 +206,8 @@ class Pipeline(QObject):
                     
                     # Store current prompt to pass to task (thread safety)
                     prompt = self._asr_prompt()
-                    span = (buffer_start_sample / self.audio.sample_rate, total_samples / self.audio.sample_rate)
+                    span = (buffer_start_sample / self.audio.sample_rate, total_samples / self.audio.sample_rate,
+                            time.time())  # wall clock when the segment was cut (for lag measurement)
                     
                     # PRE-CHECK: Is the entire buffer actually silence?
                     # (Prevent infinite loop of repeating prompt on empty audio)
@@ -211,6 +217,7 @@ class Pipeline(QObject):
                     else:
                         # Submit Final Task
                         # Pass prompt AND translate_executor for async translation
+                        self._asr_enter()
                         transcribe_executor.submit(self._process_final_chunk, final_buffer, cid, prompt, translate_executor, span)
                     
                     # Reset
@@ -227,7 +234,8 @@ class Pipeline(QObject):
                     
                     # RMS Check to avoid partial hallucination on silence
                     rms = np.sqrt(np.mean(partial_buffer**2))
-                    if rms > self.audio.silence_threshold:
+                    if rms > self.audio.silence_threshold and self._asr_idle():
+                        self._asr_enter()
                         transcribe_executor.submit(self._process_partial_chunk, partial_buffer, chunk_id, prompt)
                     
                     last_update_time = now
@@ -239,6 +247,18 @@ class Pipeline(QObject):
             drain = self.running
             transcribe_executor.shutdown(wait=drain)
             translate_executor.shutdown(wait=drain)
+
+    def _asr_enter(self):
+        with self._asr_lock:
+            self._asr_pending += 1
+
+    def _asr_exit(self):
+        with self._asr_lock:
+            self._asr_pending -= 1
+
+    def _asr_idle(self):
+        with self._asr_lock:
+            return self._asr_pending == 0
 
     def _asr_prompt(self):
         """Glossary hints first, then the previous sentence (Whisper keeps the tail of long prompts)"""
@@ -254,11 +274,14 @@ class Pipeline(QObject):
                 self.signals.update_text.emit(chunk_id, text, "")
         except Exception as e:
             print(f"[Partial {chunk_id}] Error: {e}")
+        finally:
+            self._asr_exit()
 
-    def _process_final_chunk(self, audio_data, chunk_id, prompt="", translate_executor=None, span=(0.0, 0.0)):
+    def _process_final_chunk(self, audio_data, chunk_id, prompt="", translate_executor=None, span=(0.0, 0.0, None)):
         """Transcribe, Log, and Trigger Translation Async"""
         try:
             t0 = time.time()
+            queue_sec = t0 - span[2] if span[2] else 0.0
             text = self.transcriber.transcribe(audio_data, prompt=prompt)
             asr_sec = time.time() - t0
             if text:
@@ -273,13 +296,13 @@ class Pipeline(QObject):
                 
                 # Offload translation to separate thread so we don't block next transcription
                 if translate_executor:
-                    translate_executor.submit(self._run_translation, text, chunk_id, span, asr_sec)
-            else:
-                pass
+                    translate_executor.submit(self._run_translation, text, chunk_id, span, asr_sec, queue_sec)
         except Exception as e:
             print(f"[Final {chunk_id}] Error: {e}")
+        finally:
+            self._asr_exit()
 
-    def _run_translation(self, text, chunk_id, span=(0.0, 0.0), asr_sec=0.0):
+    def _run_translation(self, text, chunk_id, span=(0.0, 0.0, None), asr_sec=0.0, queue_sec=0.0):
         """Run translation in background, emit result and log the segment"""
         t0 = time.time()
         try:
@@ -294,6 +317,9 @@ class Pipeline(QObject):
             self.logger.write_segment(id=chunk_id, start=round(span[0], 2), end=round(span[1], 2),
                                       ja=text, en=translated, asr_sec=round(asr_sec, 2),
                                       mt_sec=round(time.time() - t0, 2),
+                                      # queue_sec: wait before ASR started; lag_sec: segment cut -> English shown
+                                      queue_sec=round(queue_sec, 2),
+                                      lag_sec=round(time.time() - span[2], 2) if span[2] else None,
                                       wall=time.strftime("%H:%M:%S"))
     
     def _transcribe_chunk(self, transcriber, audio_chunk, chunk_id):
