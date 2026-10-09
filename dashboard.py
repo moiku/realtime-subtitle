@@ -192,6 +192,13 @@ class Dashboard(QWidget):
         self.silence_thresh.setDecimals(3)
         self.silence_thresh.setValue(config.silence_threshold)
         layout.addWidget(self.silence_thresh, 2, 1)
+        # Auto: adapt the threshold to the microphone level and room noise
+        from PyQt6.QtWidgets import QCheckBox
+        self.silence_auto = QCheckBox("Auto")
+        self.silence_auto.setChecked(config.silence_threshold_auto)
+        self.silence_auto.toggled.connect(lambda on: self.silence_thresh.setEnabled(not on))
+        self.silence_thresh.setEnabled(not config.silence_threshold_auto)
+        layout.addWidget(self.silence_auto, 2, 2)
         
         layout.addWidget(QLabel("Silence Duration (s):"), 3, 0)
         self.silence_dur = QDoubleSpinBox()
@@ -757,7 +764,7 @@ class Dashboard(QWidget):
         idx = self.device_combo.currentData()
         cp.set("audio", "device_index", str(idx) if idx is not None else "auto")
         cp.set("audio", "sample_rate", str(self.sample_rate.value()))
-        cp.set("audio", "silence_threshold", str(self.silence_thresh.value()))
+        cp.set("audio", "silence_threshold", "auto" if self.silence_auto.isChecked() else str(self.silence_thresh.value()))
         cp.set("audio", "silence_duration", str(self.silence_dur.value()))
         
         # Transcription

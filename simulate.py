@@ -17,7 +17,7 @@ from main import Pipeline
 
 
 class FileAudio:
-    def __init__(self, path, start=0.0, duration=None, realtime=False):
+    def __init__(self, path, start=0.0, duration=None, realtime=False, gain=1.0, noise=0.0):
         self.wav = wave.open(path, "rb")
         assert self.wav.getnchannels() == 1 and self.wav.getsampwidth() == 2
         self.sample_rate = self.wav.getframerate()
@@ -27,6 +27,8 @@ class FileAudio:
         self.wav.setpos(int(start * self.sample_rate))
         self.remaining = int(duration * self.sample_rate) if duration else None
         self.realtime = realtime
+        self.gain, self.noise = gain, noise
+        self.rng = np.random.default_rng(0)
         self.running = True
 
     def generator(self):
@@ -38,7 +40,9 @@ class FileAudio:
             frames = self.wav.readframes(n) if n > 0 else b""
             if not frames:
                 break
-            chunk = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768
+            chunk = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768 * self.gain
+            if self.noise:
+                chunk = chunk + self.rng.normal(0, self.noise, len(chunk)).astype(np.float32)
             sent += len(chunk)
             if self.remaining is not None:
                 self.remaining -= len(chunk)
@@ -56,9 +60,11 @@ def main():
     ap.add_argument("--start", type=float, default=0.0, help="start offset in seconds")
     ap.add_argument("--duration", type=float, default=None, help="seconds to process")
     ap.add_argument("--realtime", action="store_true", help="pace input like a live microphone")
+    ap.add_argument("--gain", type=float, default=1.0, help="scale the input (emulate a quiet microphone)")
+    ap.add_argument("--noise", type=float, default=0.0, help="add Gaussian noise of this RMS (room/mic noise)")
     args = ap.parse_args()
 
-    pipeline = Pipeline(audio=FileAudio(args.wav, args.start, args.duration, args.realtime))
+    pipeline = Pipeline(audio=FileAudio(args.wav, args.start, args.duration, args.realtime, args.gain, args.noise))
     pipeline.signals.update_text.connect(lambda cid, ja, en: None)
     t0 = time.time()
     pipeline.start()

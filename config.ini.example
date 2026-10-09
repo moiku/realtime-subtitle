@@ -40,7 +40,8 @@ transcription_workers = 1
 ; auto = system default input (microphone), blackhole = auto-detect BlackHole, or a device index
 device_index = auto
 sample_rate = 16000
-silence_threshold = 0.005
+; auto = adapt to microphone level / room noise; or a fixed RMS value such as 0.005
+silence_threshold = auto
 silence_duration = 0.5
 chunk_duration = 0.1
 max_phrase_duration = 20

@@ -17,6 +17,7 @@ from overlay_window import OverlayWindow
 from config import config
 from glossary import load_glossary
 from session_logger import SessionLogger
+from adaptive_threshold import AdaptiveThreshold
 
 class WorkerSignals(QObject):
     update_text = pyqtSignal(int, str, str)  # (chunk_id, original, translated)
@@ -166,6 +167,11 @@ class Pipeline(QObject):
         # single ASR queue ahead of final segments and the subtitles would fall further behind.
         self._asr_pending = 0
         self._asr_lock = threading.Lock()
+        
+        # Adaptive silence threshold (config silence_threshold = auto)
+        vad = AdaptiveThreshold(self.audio.sample_rate, initial=config.silence_threshold) \
+            if config.silence_threshold_auto else None
+        last_thr_log = 0.0
 
         try:
             for audio_chunk in audio_gen:
@@ -175,6 +181,12 @@ class Pipeline(QObject):
                     buffer_start_sample = total_samples
                 buffer = np.concatenate([buffer, audio_chunk])
                 total_samples += len(audio_chunk)
+                if vad:
+                    self.audio.silence_threshold = vad.update(audio_chunk)
+                    t_sec = total_samples / self.audio.sample_rate
+                    if vad.noise is not None and t_sec - last_thr_log >= 30:
+                        print(f"[VAD] threshold={vad.value:.4f} (noise={vad.noise:.4f}, speech={vad.speech:.4f})")
+                        last_thr_log = t_sec
                 if self.logger:
                     self.logger.write_audio(audio_chunk)
                 now = time.time()
@@ -319,6 +331,7 @@ class Pipeline(QObject):
                                       mt_sec=round(time.time() - t0, 2),
                                       # queue_sec: wait before ASR started; lag_sec: segment cut -> English shown
                                       queue_sec=round(queue_sec, 2),
+                                      thr=round(self.audio.silence_threshold, 5),
                                       lag_sec=round(time.time() - span[2], 2) if span[2] else None,
                                       wall=time.strftime("%H:%M:%S"))
     

@@ -45,7 +45,13 @@ class Config:
         
         # Audio settings
         self.sample_rate = self._getint("audio", "sample_rate", 16000)
-        self.silence_threshold = self._getfloat("audio", "silence_threshold", 0.01)
+        # 'auto' = adapt to the input level (adaptive_threshold.py); a number = fixed threshold
+        thr = self._get("audio", "silence_threshold", "auto").strip().lower()
+        self.silence_threshold_auto = (thr == "auto")
+        try:
+            self.silence_threshold = 0.005 if self.silence_threshold_auto else float(thr)
+        except ValueError:
+            self.silence_threshold_auto, self.silence_threshold = True, 0.005
         self.silence_duration = self._getfloat("audio", "silence_duration", 1.0)
         self.chunk_duration = self._getfloat("audio", "chunk_duration", 0.5)
         
